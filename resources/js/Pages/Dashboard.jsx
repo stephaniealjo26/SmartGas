@@ -1,9 +1,23 @@
 import { useForm, Head, usePage, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-
+import { useEffect, useState } from 'react';
 
 export default function Dashboard({ entries }) {
-    const { auth } = usePage().props;
+    const { flash } = usePage().props;
+    const [notification, setNotification] = useState(null);
+
+    useEffect(() => {
+        if (flash?.success) {
+            setNotification({ type: 'success', message: flash.success });
+            const timer = setTimeout(() => setNotification(null), 3000);
+            return () => clearTimeout(timer);
+        }
+        if (flash?.error) {
+            setNotification({ type: 'error', message: flash.error });
+            const timer = setTimeout(() => setNotification(null), 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [flash]);
 
     const { data, setData, post, processing, errors, reset } = useForm({
         station_name: '',
@@ -34,19 +48,32 @@ export default function Dashboard({ entries }) {
         >
             <Head title="Dashboard" />
 
-            <div className="py-12">
-                <div className="mx-auto max-w-4xl space-y-6 sm:px-6 lg:px-8">
+            <div className="py-6 sm:py-12">
+                <div className="mx-auto max-w-4xl space-y-6 px-4 sm:px-6 lg:px-8">
+
+                    {/* ── FLASH NOTIFICATION ── */}
+                    {notification && (
+                        <div
+                            className={`rounded-md p-4 text-sm font-medium shadow ${
+                                notification.type === 'success'
+                                    ? 'bg-green-50 text-green-800 border border-green-200'
+                                    : 'bg-red-50 text-red-800 border border-red-200'
+                            }`}
+                        >
+                            {notification.message}
+                        </div>
+                    )}
 
                     {/* ── FORM CARD ── */}
-                    <div className="bg-white p-6 shadow rounded-lg">
+                    <div className="bg-white p-4 sm:p-6 shadow rounded-lg">
                         <h3 className="text-lg font-semibold text-gray-700 mb-4">
                             Log a Fuel Price
                         </h3>
 
-                        <form onSubmit={submit} className="space-y-4">
+                        <form onSubmit={submit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
                             {/* Station Name */}
-                            <div>
+                            <div className="sm:col-span-2">
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Station Name
                                 </label>
@@ -103,46 +130,85 @@ export default function Dashboard({ entries }) {
                             </div>
 
                             {/* Submit Button */}
-                            <button
-                                type="submit"
-                                disabled={processing}
-                                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-medium py-2 px-4 rounded-md text-sm transition"
-                            >
-                                {processing ? 'Saving...' : 'Log Fuel Price'}
-                            </button>
+                            <div className="sm:col-span-2">
+                                <button
+                                    type="submit"
+                                    disabled={processing}
+                                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-medium py-2 px-4 rounded-md text-sm transition"
+                                >
+                                    {processing ? 'Saving...' : 'Log Fuel Price'}
+                                </button>
+                            </div>
 
                         </form>
                     </div>
 
                     {/* ── HISTORY TABLE ── */}
-                    <div className="bg-white p-6 shadow rounded-lg">
+                    <div className="bg-white p-4 sm:p-6 shadow rounded-lg">
                         <h3 className="text-lg font-semibold text-gray-700 mb-4">
                             Fuel Price History
                         </h3>
 
                         {entries && entries.length > 0 ? (
-                            <table className="w-full text-sm text-left">
-                                <thead>
-                                    <tr className="border-b text-gray-500 text-xs uppercase">
-                                        <th className="py-2 pr-4">Station</th>
-                                        <th className="py-2 pr-4">Fuel Type</th>
-                                        <th className="py-2 pr-4">Price/Liter</th>
-                                        <th className="py-2 pr-4">Date</th>
-                                        <th className="py-2">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
+                            <>
+                                {/* Desktop table */}
+                                <div className="hidden sm:block overflow-x-auto">
+                                    <table className="w-full text-sm text-left">
+                                        <thead>
+                                            <tr className="border-b text-gray-500 text-xs uppercase">
+                                                <th className="py-2 pr-4">Station</th>
+                                                <th className="py-2 pr-4">Fuel Type</th>
+                                                <th className="py-2 pr-4">Price/Liter</th>
+                                                <th className="py-2 pr-4">Date</th>
+                                                <th className="py-2">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {entries.map((entry) => (
+                                                <tr key={entry.id} className="border-b hover:bg-gray-50">
+                                                    <td className="py-2 pr-4">{entry.station_name}</td>
+                                                    <td className="py-2 pr-4">{entry.fuel_type}</td>
+                                                    <td className={`py-2 pr-4 ${getPriceColor(entry.price_per_liter)}`}>
+                                                        ₱{parseFloat(entry.price_per_liter).toFixed(2)}
+                                                    </td>
+                                                    <td className="py-2 pr-4 text-gray-400">
+                                                        {new Date(entry.created_at).toLocaleDateString()}
+                                                    </td>
+                                                    <td className="py-2">
+                                                        <button
+                                                            onClick={() => {
+                                                                if (confirm('Delete this entry?')) {
+                                                                    router.delete(route('fuel.destroy', entry.id));
+                                                                }
+                                                            }}
+                                                            className="text-red-500 hover:text-red-700 text-xs font-medium"
+                                                        >
+                                                            Delete
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {/* Mobile cards */}
+                                <div className="sm:hidden space-y-3">
                                     {entries.map((entry) => (
-                                        <tr key={entry.id} className="border-b hover:bg-gray-50">
-                                            <td className="py-2 pr-4">{entry.station_name}</td>
-                                            <td className="py-2 pr-4">{entry.fuel_type}</td>
-                                            <td className={`py-2 pr-4 ${getPriceColor(entry.price_per_liter)}`}>
-                                                ₱{parseFloat(entry.price_per_liter).toFixed(2)}
-                                            </td>
-                                            <td className="py-2 pr-4 text-gray-400">
-                                                {new Date(entry.created_at).toLocaleDateString()}
-                                            </td>
-                                            <td className="py-2">
+                                        <div key={entry.id} className="border rounded-lg p-3 space-y-1">
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <p className="font-medium text-gray-800">{entry.station_name}</p>
+                                                    <p className="text-xs text-gray-500">{entry.fuel_type}</p>
+                                                </div>
+                                                <span className={`text-lg ${getPriceColor(entry.price_per_liter)}`}>
+                                                    ₱{parseFloat(entry.price_per_liter).toFixed(2)}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between items-center pt-1">
+                                                <span className="text-xs text-gray-400">
+                                                    {new Date(entry.created_at).toLocaleDateString()}
+                                                </span>
                                                 <button
                                                     onClick={() => {
                                                         if (confirm('Delete this entry?')) {
@@ -153,11 +219,11 @@ export default function Dashboard({ entries }) {
                                                 >
                                                     Delete
                                                 </button>
-                                            </td>
-                                        </tr>
+                                            </div>
+                                        </div>
                                     ))}
-                                </tbody>
-                            </table>
+                                </div>
+                            </>
                         ) : (
                             <p className="text-gray-400 text-sm">No fuel entries yet. Log your first one above!</p>
                         )}

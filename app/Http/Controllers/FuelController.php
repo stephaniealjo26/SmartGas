@@ -34,7 +34,7 @@ class FuelController extends Controller
             'price_per_liter' => $validated['price_per_liter'],
         ]);
 
-        return redirect()->route('dashboard');
+        return redirect()->route('dashboard')->with('success', 'Price logged successfully!');
     }
 
     public function destroy(Request $request, FuelEntry $fuelEntry)
@@ -42,6 +42,6 @@ class FuelController extends Controller
         abort_unless($fuelEntry->user_id === $request->user()->id, 403);
         $fuelEntry->delete();
 
-        return redirect()->route('dashboard');
+        return redirect()->route('dashboard')->with('success', 'Entry deleted successfully!');
     }
 }

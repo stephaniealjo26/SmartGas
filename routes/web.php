@@ -18,7 +18,7 @@ Route::get('/', function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [FuelController::class, 'index'])->name('dashboard');
     Route::post('/fuel', [FuelController::class, 'store'])->name('fuel.store');
-    Route::delete('/fuel/{id}', [FuelController::class, 'destroy'])->name('fuel.destroy');
+    Route::delete('/fuel/{fuelEntry}', [FuelController::class, 'destroy'])->name('fuel.destroy');
 });
 
 Route::middleware('auth')->group(function () {
