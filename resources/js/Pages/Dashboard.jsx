@@ -2,7 +2,7 @@ import { useForm, Head, usePage, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useEffect, useState } from 'react';
 
-export default function Dashboard({ entries }) {
+export default function Dashboard({ entries, stations = [] }) {
     const { flash } = usePage().props;
     const [notification, setNotification] = useState(null);
 
@@ -37,6 +37,8 @@ export default function Dashboard({ entries }) {
             ? 'text-red-600 font-bold'
             : 'text-green-600 font-bold';
     };
+
+    const getStationName = (entry) => entry.fuel_station?.name ?? entry.station_name;
 
     return (
         <AuthenticatedLayout
@@ -81,10 +83,21 @@ export default function Dashboard({ entries }) {
                                     type="text"
                                     value={data.station_name}
                                     onChange={(e) => setData('station_name', e.target.value)}
+                                    list="station-suggestions"
                                     placeholder="e.g. Petron EDSA"
                                     className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     required
                                 />
+                                <datalist id="station-suggestions">
+                                    {stations.map((station) => (
+                                        <option key={station.id} value={station.name} />
+                                    ))}
+                                </datalist>
+                                {stations.length > 0 && (
+                                    <p className="mt-1 text-xs text-gray-500">
+                                        Choose one of your tracked stations or type a new station name.
+                                    </p>
+                                )}
                                 {errors.station_name && (
                                     <p className="text-red-500 text-xs mt-1">{errors.station_name}</p>
                                 )}
@@ -166,7 +179,7 @@ export default function Dashboard({ entries }) {
                                         <tbody>
                                             {entries.map((entry) => (
                                                 <tr key={entry.id} className="border-b hover:bg-gray-50">
-                                                    <td className="py-2 pr-4">{entry.station_name}</td>
+                                                    <td className="py-2 pr-4">{getStationName(entry)}</td>
                                                     <td className="py-2 pr-4">{entry.fuel_type}</td>
                                                     <td className={`py-2 pr-4 ${getPriceColor(entry.price_per_liter)}`}>
                                                         ₱{parseFloat(entry.price_per_liter).toFixed(2)}
@@ -198,7 +211,7 @@ export default function Dashboard({ entries }) {
                                         <div key={entry.id} className="border rounded-lg p-3 space-y-1">
                                             <div className="flex justify-between items-start">
                                                 <div>
-                                                    <p className="font-medium text-gray-800">{entry.station_name}</p>
+                                                    <p className="font-medium text-gray-800">{getStationName(entry)}</p>
                                                     <p className="text-xs text-gray-500">{entry.fuel_type}</p>
                                                 </div>
                                                 <span className={`text-lg ${getPriceColor(entry.price_per_liter)}`}>
